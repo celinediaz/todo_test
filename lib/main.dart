@@ -70,9 +70,13 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           ...this.items.map((e) => ListTile(
             leading: Checkbox(
-              onChanged: (e){
-              },
               value: e.checked,
+              onChanged: (bool? value){
+                setState(() {
+                  e.checked = !e.checked;
+                  updateList(e.checked);
+                });
+              },
             ),
             title: Text(e.text,
               style: TextStyle(
