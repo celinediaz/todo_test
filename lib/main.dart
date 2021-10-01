@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-
+import 'package:todo_test/hero_dialog_route.dart';
+import 'package:todo_test/add_todo_popup_card.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -39,13 +39,13 @@ class Task {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Task> items = [
-    Task('A', order: 0),
-    Task('B', order: 1),
-    Task('C', order: 2, checked: true),
-    Task('D', order: 3),
+    Task('Take out the papers and the trash', order: 0),
+    Task('Scrub that kitchen floor', order: 1),
+    Task('Finish cleaning up room', order: 2, checked: true),
+    Task('Get all the garbage out of sight', order: 3),
   ];
 
-  updateList(e) {
+  updateList() {
     setState((){
       List<Task> checkedList = this.items.where((element) => element.checked).toList();
       checkedList.sort((a,b) => a.order - b.order);
@@ -57,9 +57,27 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  final textCtrl = TextEditingController();
+
+  openPopUp(void Function(String) onSave) {
+    Navigator.of(context).push(HeroDialogRoute(
+        builder: (context){
+          return AddTodoPopupCard(
+              textCtrl: textCtrl,
+              onSave: (text){
+                onSave(text);
+                updateList();
+                textCtrl.text = '';
+                Navigator.of(context).pop();
+              },
+          );
+        },
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
-    updateList(this.items);
+    updateList();
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 80,
@@ -74,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onChanged: (bool? value){
                 setState(() {
                   e.checked = !e.checked;
-                  updateList(e.checked);
+                  updateList();
                 });
               },
             ),
@@ -84,19 +102,112 @@ class _MyHomePageState extends State<MyHomePage> {
                 decoration: e.checked ? TextDecoration.lineThrough : null,
               ),
             ),
-            trailing: IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+            trailing: PopupMenuButton<String>(
+              onSelected: (t) {
+                switch(t){
+                  case 'edit':
+                    this.textCtrl.text = e.text;
+                    openPopUp((text) =>
+                    this.items.firstWhere((element) => element.order == e.order)
+                      .text = text);
+                    break;
+                  case 'delete':
+                    this.items.removeWhere((element) => element.order == e.order);
+                    updateList();
+                    break;
+                }
+              },
+              icon: Icon(Icons.more_vert),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(5)),
+                side: BorderSide(color: Colors.purple.shade200, width:1),
+              ),
+              itemBuilder: (context){
+                return[
+                  PopupMenuItem<String>(
+                    height:12,
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(Icons.edit, color: Colors.purple.shade500),
+                          Text(
+                              'Edit',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                              color: Colors.purple.shade900,
+                              ),
+                          ),
+                        ],
+                        ),
+                    value: 'edit',
+                      ),
+                  PopupMenuDivider(
+                    height: 4,
+                  ),
+                  PopupMenuItem<String>(
+                    height:12,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(Icons.delete_rounded, color: Colors.redAccent.shade200),
+                        Text(
+                          'Delete',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: Colors.redAccent.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    value: 'delete',
+                  ),
+                ];
+              },
+            ),
+            //IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
             onTap: () {
               e.checked = !e.checked;
-              updateList(e);
+              updateList();
             },
           ))
       ]),
-      floatingActionButton: FloatingActionButton(
-        onPressed: (){},
-        tooltip: 'Add Task',
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(right:5.0),
+        child: GestureDetector(
+          onTap: () => openPopUp((text) => items.add(Task(text,
+                          order: items.reduce((value, element) =>
+                              element.order > value.order ? element : value)
+                              .order + 1
+                        )
+          )),
+          child: Hero(
+            tag: 'add-todo-hero',
+            child: Material(
+              elevation:2,
+              color: Colors.purple.shade100,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(46),
+                side: BorderSide(
+                  width: 3,
+                  color: Colors.purple.shade200
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(4.0),
+                child: Icon(
+                  Icons.add_rounded,
+                  color: Colors.purple.shade500,
+                  size: 32
+                )
+              )
+            )
+
+          )
+        )
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
+
+
 
